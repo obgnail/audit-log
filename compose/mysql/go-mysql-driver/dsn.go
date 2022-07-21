@@ -447,7 +447,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return errors.New("invalid bool value: " + value)
 			}
 
-		// Time Location
+		// TxTime Location
 		case "loc":
 			if value, err = url.QueryUnescape(value); err != nil {
 				return
@@ -465,7 +465,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return errors.New("invalid bool value: " + value)
 			}
 
-		// time.Time parsing
+		// time.TxTime parsing
 		case "parseTime":
 			var isBool bool
 			cfg.ParseTime, isBool = readBool(value)

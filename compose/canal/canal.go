@@ -7,6 +7,7 @@ import (
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/schema"
 	"github.com/obgnail/audit-log/audit_log"
+	"github.com/obgnail/audit-log/compose/kafka"
 	"github.com/pingcap/errors"
 	"log"
 	"runtime/debug"
@@ -14,9 +15,10 @@ import (
 )
 
 type BinlogHandler struct {
-	databases map[string]struct{}
-	tables    map[string]struct{}
+	dbFilter    map[string]struct{}
+	tableFilter map[string]struct{}
 
+	startTx bool
 	curGTID string
 
 	*canal.DummyEventHandler
@@ -32,8 +34,8 @@ func NewBinlogHandler(databases, tables []string) *BinlogHandler {
 		ts[strings.ToLower(t)] = struct{}{}
 	}
 	return &BinlogHandler{
-		databases:         ds,
-		tables:            ts,
+		dbFilter:          ds,
+		tableFilter:       ts,
 		DummyEventHandler: new(canal.DummyEventHandler),
 	}
 }
@@ -44,6 +46,13 @@ func (h *BinlogHandler) String() string {
 
 func (h *BinlogHandler) OnGTID(gtid mysql.GTIDSet) error {
 	h.curGTID = gtid.String()
+	h.startTx = true
+	return nil
+}
+
+func (h *BinlogHandler) OnXID(nextPos mysql.Position) error {
+	h.curGTID = ""
+	h.startTx = false
 	return nil
 }
 
@@ -54,15 +63,19 @@ func (h *BinlogHandler) OnRow(e *canal.RowsEvent) error {
 		}
 	}()
 
-	if len(h.databases) != 0 {
-		if _, ok := h.databases[e.Table.Schema]; !ok {
+	if len(h.dbFilter) != 0 {
+		if _, ok := h.dbFilter[e.Table.Schema]; !ok {
 			return nil
 		}
 	}
-	if len(h.tables) != 0 {
-		if _, ok := h.tables[e.Table.Name]; !ok {
+	if len(h.tableFilter) != 0 {
+		if _, ok := h.tableFilter[e.Table.Name]; !ok {
 			return nil
 		}
+	}
+
+	if h.curGTID == "" || !h.startTx {
+		return nil
 	}
 
 	db := e.Table.Schema
@@ -89,7 +102,11 @@ func (h *BinlogHandler) OnRow(e *canal.RowsEvent) error {
 		log.Printf("[ERR] %s", err)
 	}
 
-	audit_log.SaveBinlog(db, table, h.curGTID, action, e.Header.Timestamp, data)
+	err = kafka.Producer.SendBinlogMessage(db, table, h.curGTID, action, e.Header.Timestamp, data)
+	if err != nil {
+		log.Printf("insert binlog error: %+v\n", err)
+		err = nil // 当前操作报错不影响 river 的执行
+	}
 	return nil
 }
 

@@ -8,12 +8,21 @@
   "db_max_idle": 10,
   "db_max_open": 1024,
   "db_conn_max_life_time": 1800,
-  "kafka_host": "127.0.0.1",
-  "kafka_port": 9092,
-  "kafka_binlog_topic": "kafka_binlog_topic",
+  "kafka_brokers": [
+    "kafka:16106"
+  ],
   "kafka_tx_info_topic": "kafka_tx_info_topic",
+  "kafka_binlog_topic": "kafka_binlog_topic",
+  "kafka_offset_store_path": "./",
   "canal_listen_schema": [
     "es_river"
   ],
-  "canal_filter_table": []
+  "canal_filter_table": [],
+  "clickhouse_addrs": [
+    "127.0.0.1:8123"
+  ],
+  "clickhouse_username": "default",
+  "clickhouse_password": "",
+  "clickhouse_database": "audit_log",
+  "clickhouse_debug": false
 }

@@ -22,7 +22,7 @@ import (
 //  err := db.QueryRow("SELECT time FROM foo WHERE id=?", id).Scan(&nt)
 //  ...
 //  if nt.Valid {
-//     // use nt.Time
+//     // use nt.TxTime
 //  } else {
 //     // NULL value
 //  }
@@ -30,5 +30,5 @@ import (
 // This NullTime implementation is not driver-specific
 type NullTime struct {
 	Time  time.Time
-	Valid bool // Valid is true if Time is not NULL
+	Valid bool // Valid is true if TxTime is not NULL
 }

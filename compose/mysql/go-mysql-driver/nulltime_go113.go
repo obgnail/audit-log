@@ -22,7 +22,7 @@ import (
 //  err := db.QueryRow("SELECT time FROM foo WHERE id=?", id).Scan(&nt)
 //  ...
 //  if nt.Valid {
-//     // use nt.Time
+//     // use nt.TxTime
 //  } else {
 //     // NULL value
 //  }

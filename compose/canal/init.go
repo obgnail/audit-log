@@ -40,7 +40,7 @@ func NewDefaultRiver(addr string, user string, password string, handler canal.Ev
 	return nil
 }
 
-func StartCanal() {
+func InitCanal() error {
 	connStr := fmt.Sprintf(`%s:%d`, config.String("mysql_host", "127.0.0.1"), config.Int("mysql_port", 3306))
 	user := config.String("mysql_user", "root")
 	password := config.String("mysql_password", "root")
@@ -50,6 +50,7 @@ func StartCanal() {
 	handler := NewBinlogHandler(dbs, tables)
 	err := NewDefaultRiver(connStr, user, password, handler)
 	if err != nil {
-		panic(err)
+		return errors.Trace(err)
 	}
+	return nil
 }

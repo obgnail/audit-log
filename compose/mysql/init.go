@@ -14,12 +14,13 @@ var (
 	DBM *gorp.DbMap
 )
 
-func BuildDBM() (dbm *gorp.DbMap, err error) {
-	dbm, err = buildDBM()
+func InitMySQL() (err error) {
+	dbm, err := buildDBM()
 	if err != nil {
-		return nil, errors.Trace(err)
+		return errors.Trace(err)
 	}
-	return
+	DBM = dbm
+	return nil
 }
 
 func buildDBM() (*gorp.DbMap, error) {
@@ -45,11 +46,4 @@ func buildDBM() (*gorp.DbMap, error) {
 	}
 	dbm := &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{}}
 	return dbm, nil
-}
-
-func init() {
-	var err error
-	if DBM, err = BuildDBM(); err != nil {
-		panic(err)
-	}
 }

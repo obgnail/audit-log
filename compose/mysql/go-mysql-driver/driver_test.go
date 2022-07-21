@@ -657,7 +657,7 @@ func (t timeMode) String() string {
 	case binaryString:
 		return "binary:string"
 	case binaryTime:
-		return "binary:time.Time"
+		return "binary:time.TxTime"
 	case textString:
 		return "text:string"
 	}

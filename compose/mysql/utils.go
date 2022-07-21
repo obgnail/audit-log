@@ -3,9 +3,10 @@ package mysql
 import (
 	"bytes"
 	"fmt"
-	"github.com/obgnail/audit-log/audit_log"
+	"github.com/obgnail/audit-log/compose/kafka"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gorp.v1"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -45,7 +46,11 @@ func DBMTransact(ctx, userUUID string, txFunc func(*gorp.Transaction) error) (er
 		GTIDField := txiField.FieldByName("GTID")
 		GTIDValue := GTIDField.String()
 		if checkGTID(GTIDValue) {
-			audit_log.SaveTxInfo(ctx, userUUID, GTIDValue)
+			err = kafka.Producer.SendTxInfoMessage(ctx, userUUID, GTIDValue)
+			if err != nil {
+				log.Printf("insert gtid error: %+v\n", err)
+				err = nil // 当前操作报错不影响 MySQL 的事务执行
+			}
 			fmt.Printf("GTIDField: %s, GTIDValue: %s\n", GTIDField, GTIDValue)
 		}
 	}()

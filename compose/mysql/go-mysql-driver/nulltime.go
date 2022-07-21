@@ -38,7 +38,7 @@ func (nt *NullTime) Scan(value interface{}) (err error) {
 	}
 
 	nt.Valid = false
-	return fmt.Errorf("Can't convert %T to time.Time", value)
+	return fmt.Errorf("Can't convert %T to time.TxTime", value)
 }
 
 // Value implements the driver Valuer interface.

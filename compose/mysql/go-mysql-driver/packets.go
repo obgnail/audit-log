@@ -1309,7 +1309,7 @@ func (rows *binaryRows) readRow(dest []driver.Value) error {
 
 		case
 			fieldTypeDate, fieldTypeNewDate, // Date YYYY-MM-DD
-			fieldTypeTime,                         // Time [-][H]HH:MM:SS[.fractal]
+			fieldTypeTime,                         // TxTime [-][H]HH:MM:SS[.fractal]
 			fieldTypeTimestamp, fieldTypeDateTime: // Timestamp YYYY-MM-DD HH:MM:SS[.fractal]
 
 			num, isNull, n := readLengthEncodedInteger(data[pos:])

@@ -103,7 +103,7 @@ func readBool(input string) (value bool, valid bool) {
 }
 
 /******************************************************************************
-*                           Time related utils                                *
+*                           TxTime related utils                                *
 ******************************************************************************/
 
 func parseDateTime(str string, loc *time.Location) (t time.Time, err error) {
