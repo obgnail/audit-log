@@ -1,0 +1,30 @@
+[mysql]
+driver = "mysql"
+host = "127.0.0.1"
+port = 3306
+user = "root"
+password = "root"
+schemas = ["testdb01"]
+db_max_dile = 10
+db_max_open = 1024
+db_conn_max_life_time = 1024
+
+[position_saver]
+save_dir = "./"
+save_interval = 3
+
+[health_checker]
+check_pos_threshold = 3000
+check_interval = 5
+
+[audit_log]
+handle_tables = ["testdb01.user"]
+
+[kafka]
+addrs = ["127.0.0.1:9092"]
+binlog_topic = "binlog"
+tx_info_topic = "tx_info"
+
+[clickhouse]
+host = "127.0.0.1"
+port = 8123

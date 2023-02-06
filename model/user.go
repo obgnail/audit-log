@@ -62,7 +62,7 @@ func DeleteUserByUUID(tx *gorp.Transaction, uuids ...string) error {
 		return nil
 	}
 	sql := "UPDATE `user` SET `status` = ? WHERE `uuid` IN (%s);"
-	sql = fmt.Sprintf(sql, mysql.SqlPlaceholds(len(uuids)))
+	sql = fmt.Sprintf(sql, mysql.SqlPlaceholders(len(uuids)))
 
 	args, _ := mysql.BuildSqlArgs(UserStatusDeleted, uuids)
 	_, err := tx.Exec(sql, args...)

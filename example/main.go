@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/obgnail/audit-log/audit_log"
-	"github.com/obgnail/audit-log/compose/canal"
 	"github.com/obgnail/audit-log/compose/mysql"
+	audit_log2 "github.com/obgnail/audit-log/compose/tx_info_river"
 	"github.com/obgnail/audit-log/context"
 	"github.com/obgnail/audit-log/model"
 	"gopkg.in/gorp.v1"
@@ -39,7 +39,7 @@ func main() {
 	})
 	checkErr(err)
 
-	txInfo := audit_log.GetTxInfo()
+	txInfo := audit_log2.GetTxInfo()
 	fmt.Println("--+++--", txInfo.GTID)
 
 	time.Sleep(time.Second * 2)

@@ -3,9 +3,12 @@ package mysql
 import (
 	"bytes"
 	"fmt"
-	"github.com/obgnail/audit-log/audit_log"
+	"github.com/juju/errors"
+	"github.com/obgnail/audit-log/compose/common"
+	"github.com/obgnail/audit-log/compose/river"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gorp.v1"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -45,7 +48,10 @@ func DBMTransact(ctx, userUUID string, txFunc func(*gorp.Transaction) error) (er
 		GTIDField := txiField.FieldByName("GTID")
 		GTIDValue := GTIDField.String()
 		if checkGTID(GTIDValue) {
-			audit_log.SaveTxInfo(ctx, userUUID, GTIDValue)
+			t := common.NewTxInfo(ctx, userUUID, GTIDValue)
+			if err := river.AuditLogRiver.PushTx(t); err != nil {
+				log.Println("[Error] push tx err:\n", errors.ErrorStack(err))
+			}
 			fmt.Printf("GTIDField: %s, GTIDValue: %s\n", GTIDField, GTIDValue)
 		}
 	}()
@@ -140,8 +146,8 @@ func BuildSqlArgs(args ...interface{}) ([]interface{}, error) {
 	return newArgs, nil
 }
 
-// 创建 sql in 查询条件
-func SqlPlaceholds(count int) string {
+// SqlPlaceholders 创建 sql in 查询条件
+func SqlPlaceholders(count int) string {
 	return appendDuplicateString("?", sqlDefaultSep, count)
 }
 

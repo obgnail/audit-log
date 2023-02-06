@@ -55,7 +55,7 @@ func DeleteGroupByUUID(tx *gorp.Transaction, uuids ...string) error {
 		return nil
 	}
 	sql := "UPDATE `group` SET `status` = ? WHERE `uuid` IN (%s);"
-	sql = fmt.Sprintf(sql, mysql.SqlPlaceholds(len(uuids)))
+	sql = fmt.Sprintf(sql, mysql.SqlPlaceholders(len(uuids)))
 
 	args, _ := mysql.BuildSqlArgs(GroupStatusDeleted, uuids)
 	_, err := tx.Exec(sql, args...)
