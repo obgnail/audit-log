@@ -17,6 +17,14 @@ type Context struct {
 	Param2 string `db:"context_param_2"`
 }
 
+func New(Type int, param1, param2 string) Context {
+	return Context{
+		Type:   Type,
+		Param1: param1,
+		Param2: param2,
+	}
+}
+
 // 将 Context 序列化成可读字符串
 func (c Context) String() string {
 	var b strings.Builder

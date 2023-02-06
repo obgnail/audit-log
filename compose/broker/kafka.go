@@ -76,7 +76,7 @@ func (k *KafkaBroker) ConsumeTx(fn func(info *common.TxInfo) error) error {
 		}
 		return nil
 	}
-	if err := kafka.Consume(k.addrs, k.binlogTopic, f); err != nil {
+	if err := kafka.Consume(k.addrs, k.txInfoTopic, f); err != nil {
 		return errors.Trace(err)
 	}
 	return nil

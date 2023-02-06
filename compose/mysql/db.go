@@ -19,7 +19,7 @@ const (
 	sqlDefaultSep = " ,"
 )
 
-func DBMTransact(ctx, userUUID string, txFunc func(*gorp.Transaction) error) (err error) {
+func DBMTransact(ctx string, txFunc func(tx *gorp.Transaction) error) (err error) {
 	tx, err := DBM.Begin()
 	if err != nil {
 		return
@@ -48,7 +48,7 @@ func DBMTransact(ctx, userUUID string, txFunc func(*gorp.Transaction) error) (er
 		GTIDField := txiField.FieldByName("GTID")
 		GTIDValue := GTIDField.String()
 		if checkGTID(GTIDValue) {
-			t := common.NewTxInfo(ctx, userUUID, GTIDValue)
+			t := common.NewTxInfo(ctx, GTIDValue)
 			if err := river.AuditLogRiver.PushTx(t); err != nil {
 				log.Println("[Error] push tx err:\n", errors.ErrorStack(err))
 			}

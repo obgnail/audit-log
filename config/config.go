@@ -10,7 +10,7 @@ type MainConfig struct {
 	Mysql         *MySqlConfig           `toml:"mysql"`
 	PositionSaver *PosAutoSaverConfig    `toml:"position_saver"`
 	HealthChecker *HealthCheckerConfig   `toml:"health_checker"`
-	AuditLog      *AuditLogHandlerConfig `toml:"river"`
+	AuditLog      *AuditLogHandlerConfig `toml:"audit_log"`
 	Kafka         *KafkaConfig           `toml:"kafka"`
 	ClickHouse    *ClickHouseConfig      `toml:"clickhouse"`
 }
@@ -62,9 +62,9 @@ var (
 	ClickHouse    *ClickHouseConfig
 )
 
-func InitConfig() error {
+func InitConfig(path string) error {
 	var cfg MainConfig
-	f, err := os.Open("./config/config.toml")
+	f, err := os.Open(path)
 	if err != nil {
 		return errors.Trace(err)
 	}

@@ -13,8 +13,8 @@ func checkErr(err error) {
 	}
 }
 
-func init() {
-	checkErr(config.InitConfig())
+func Init(path string) {
+	checkErr(config.InitConfig(path))
 	checkErr(broker.InitBroker())
 	checkErr(river.InitRiver())
 	checkErr(mysql.InitDBM())

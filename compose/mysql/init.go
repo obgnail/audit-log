@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/juju/errors"
-	_ "github.com/obgnail/audit-log/compose/mysql/go-mysql-driver"
 	"github.com/obgnail/audit-log/config"
+	_ "github.com/obgnail/audit-log/go-mysql-driver"
 	"gopkg.in/gorp.v1"
 	"time"
 )

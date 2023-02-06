@@ -8,19 +8,34 @@ import (
 	"time"
 )
 
+type Action int
+
 const (
-	EventActionInsert = iota
+	EventActionInsert Action = iota
 	EventActionUpdate
 	EventActionDelete
 )
 
+func (a Action) String() string {
+	switch a {
+	case EventActionInsert:
+		return "insert"
+	case EventActionUpdate:
+		return "update"
+	case EventActionDelete:
+		return "delete"
+	default:
+		return "unknown"
+	}
+}
+
 type BinlogEvent struct {
-	Db          string       `json:"db"`
-	EventTable  string       `json:"event_table"`
-	EventAction int          `json:"event_action"`
-	GTID        string       `json:"gtid"`
-	EventTime   uint32       `json:"event_time"`
-	Event       sql.RawBytes `json:"event"`
+	Db     string       `json:"db"`
+	Table  string       `json:"table"`
+	Action Action       `json:"action"`
+	GTID   string       `json:"gtid"`
+	Time   int64        `json:"time"`
+	Data   sql.RawBytes `json:"data"`
 }
 
 func (e *BinlogEvent) Marshal() ([]byte, error) {
@@ -37,7 +52,7 @@ func NewBinlogEvent(event *river.EventData) (*BinlogEvent, error) {
 		return nil, errors.Trace(err)
 	}
 
-	var action int
+	var action Action
 	switch event.EventType {
 	case river.EventTypeInsert:
 		action = EventActionInsert
@@ -48,12 +63,12 @@ func NewBinlogEvent(event *river.EventData) (*BinlogEvent, error) {
 	}
 
 	b := &BinlogEvent{
-		Db:          event.Db,
-		EventTable:  event.Table,
-		EventAction: action,
-		GTID:        event.GTIDSet,
-		EventTime:   event.Timestamp,
-		Event:       data,
+		Db:     event.Db,
+		Table:  event.Table,
+		Action: action,
+		GTID:   event.GTIDSet,
+		Time:   int64(event.Timestamp),
+		Data:   data,
 	}
 	return b, nil
 }
@@ -77,10 +92,9 @@ var (
 )
 
 type TxInfo struct {
-	Time     int64  `db:"time" json:"time"`
-	Context  string `db:"context" json:"context"`
-	UserUUID string `db:"user_uuid" json:"user_uuid"`
-	GTID     string `db:"gtid" json:"gtid"`
+	Time    int64  `db:"time" json:"time"`
+	Context string `db:"context" json:"context"`
+	GTID    string `db:"gtid" json:"gtid"`
 }
 
 func (t *TxInfo) Marshal() ([]byte, error) {
@@ -91,12 +105,11 @@ func (t *TxInfo) Marshal() ([]byte, error) {
 	return b, nil
 }
 
-func NewTxInfo(ctx, userUUID, Gtid string) *TxInfo {
+func NewTxInfo(ctx, Gtid string) *TxInfo {
 	return &TxInfo{
-		Time:     time.Now().In(defaultLoc).Unix(),
-		Context:  ctx,
-		UserUUID: userUUID,
-		GTID:     Gtid,
+		Time:    time.Now().In(defaultLoc).Unix(),
+		Context: ctx,
+		GTID:    Gtid,
 	}
 }
 
