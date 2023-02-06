@@ -18,9 +18,9 @@ func main() {
 	go runRiver()
 	time.Sleep(time.Second * 3)
 
-	createTable()
+	//createTable()
 	insertUser()
-	dropTable()
+	//dropTable()
 	forever := make(chan struct{})
 	<-forever
 }
