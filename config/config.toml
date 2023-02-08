@@ -24,7 +24,13 @@ handle_tables = ["testdb01.user"]
 addrs = ["127.0.0.1:9092"]
 binlog_topic = "binlog"
 tx_info_topic = "tx_info"
+offset_store_dir = "./"
+#offset =
+use_oldest_offest = false
 
 [clickhouse]
-host = "127.0.0.1"
-port = 8123
+addrs = ["127.0.0.1:9090"]
+user = "default"
+password = ""
+db = "audit_log"
+debug = false

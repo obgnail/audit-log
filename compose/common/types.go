@@ -41,7 +41,7 @@ type BinlogEvent struct {
 func (e *BinlogEvent) Marshal() ([]byte, error) {
 	b, err := json.Marshal(e)
 	if err != nil {
-		return []byte{}, nil
+		return []byte{}, errors.Trace(err)
 	}
 	return b, nil
 }
@@ -100,7 +100,7 @@ type TxInfo struct {
 func (t *TxInfo) Marshal() ([]byte, error) {
 	b, err := json.Marshal(t)
 	if err != nil {
-		return []byte{}, nil
+		return []byte{}, errors.Trace(err)
 	}
 	return b, nil
 }

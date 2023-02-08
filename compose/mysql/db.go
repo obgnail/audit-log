@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/juju/errors"
+	"github.com/obgnail/audit-log/compose/broker"
 	"github.com/obgnail/audit-log/compose/common"
-	"github.com/obgnail/audit-log/compose/river"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gorp.v1"
 	"log"
@@ -49,7 +49,7 @@ func DBMTransact(ctx string, txFunc func(tx *gorp.Transaction) error) (err error
 		GTIDValue := GTIDField.String()
 		if checkGTID(GTIDValue) {
 			t := common.NewTxInfo(ctx, GTIDValue)
-			if err := river.AuditLogRiver.PushTx(t); err != nil {
+			if err := broker.TxInfoBroker.PushTx(t); err != nil {
 				log.Println("[Error] push tx err:\n", errors.ErrorStack(err))
 			}
 			fmt.Printf("GTIDField: %s, GTIDValue: %s\n", GTIDField, GTIDValue)

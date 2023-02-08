@@ -42,14 +42,20 @@ type AuditLogHandlerConfig struct {
 }
 
 type KafkaConfig struct {
-	Addrs       []string `toml:"addrs"`
-	BinlogTopic string   `toml:"binlog_topic"`
-	TxInfoTopic string   `toml:"tx_info_topic"`
+	Addrs           []string `toml:"addrs"`
+	BinlogTopic     string   `toml:"binlog_topic"`
+	TxInfoTopic     string   `toml:"tx_info_topic"`
+	OffsetStoreDir  string   `toml:"offset_store_dir"`
+	Offset          *int64   `toml:"offsetStore"` // if it has no offset, set nil
+	UseOldestOffset bool     `toml:"use_oldest_offset"`
 }
 
 type ClickHouseConfig struct {
-	Host string `toml:"host"`
-	port int64  `toml:"port"`
+	Addrs    []string `toml:"addrs"`
+	User     string   `toml:"user"`
+	Password string   `toml:"password"`
+	DB       string   `toml:"db"`
+	Debug    bool     `toml:"debug"`
 }
 
 var (

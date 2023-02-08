@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/compose"
-	"github.com/obgnail/audit-log/compose/common"
 	"github.com/obgnail/audit-log/compose/mysql"
-	"github.com/obgnail/audit-log/compose/river"
+	"github.com/obgnail/audit-log/compose/syncer"
 	"github.com/obgnail/audit-log/context"
 	"github.com/obgnail/audit-log/utils/uuid"
 	r "github.com/obgnail/mysql-river/river"
@@ -15,31 +14,26 @@ import (
 )
 
 func main() {
-	go runRiver()
+	compose.Init("../config/config.toml")
+}
+
+func main2() {
+	compose.Init("../config/config.toml")
+
+	go func() {
+		if err := syncer.BinlogSyncer.Sync(r.FromDB); err != nil {
+			panic(err)
+		}
+	}()
+
 	time.Sleep(time.Second * 3)
 
 	//createTable()
 	insertUser()
 	//dropTable()
+
 	forever := make(chan struct{})
 	<-forever
-}
-
-func runRiver() {
-	compose.Init("../config/config.toml")
-
-	go river.AuditLogRiver.ConsumeLog(func(event *common.BinlogEvent) error {
-		fmt.Printf("在%d时刻,对%s.%s表进行了%s操作,其gtid为%s.操作的值为%s\n",
-			event.Time, event.Db, event.Table, event.Action, event.GTID, event.Data)
-		return nil
-	})
-	go river.AuditLogRiver.ConsumeTx(func(info *common.TxInfo) error {
-		fmt.Printf("在%d时刻,提交的GTID为:%s,携带的上下文为:%s\n", info.Time, info.GTID, info.Context)
-		return nil
-	})
-
-	err := river.Run(r.FromDB)
-	checkErr(err)
 }
 
 func createTable() {
@@ -72,6 +66,7 @@ func dropTable() {
 }
 
 func insertUser() {
+	fmt.Println("----------------------------------------------")
 	myType := 1
 	myContext := context.New(myType, "typeParam1", "typeParam2")
 	err := mysql.DBMTransact(myContext.String(), func(tx *gorp.Transaction) error {

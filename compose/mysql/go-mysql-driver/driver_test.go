@@ -1536,7 +1536,7 @@ func TestTimezoneConversion(t *testing.T) {
 		reftime := time.Date(2014, 05, 30, 18, 03, 17, 0, time.UTC).In(usCentral)
 		dbt.mustExec("INSERT INTO test VALUE (?)", reftime)
 
-		// Retrieve time from DB
+		// Retrieve time from Db
 		rows := dbt.mustQuery("SELECT ts FROM test")
 		defer rows.Close()
 		if !rows.Next() {
@@ -2099,7 +2099,7 @@ func TestRejectReadOnly(t *testing.T) {
 		// MySQL server version is too old
 		maybeSkip(t, err, 1193)
 		if _, err := dbt.db.Exec("DROP TABLE test"); err == nil {
-			t.Fatalf("writing to DB in read-only session without " +
+			t.Fatalf("writing to Db in read-only session without " +
 				"rejectReadOnly did not error")
 		}
 		// Set the session back to read-write so runTests() can properly clean
