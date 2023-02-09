@@ -17,10 +17,10 @@ func New(binlogSyncer *syncer.BinlogSynchronizer, txInfoSyncer *syncer.TxInfoSyn
 	return &AuditLogger{binlogSyncer: binlogSyncer, txInfoSyncer: txInfoSyncer}
 }
 
-func (a *AuditLogger) Sync(handler Handler) {
-	go a.txInfoSyncer.HandleAuditLog(handler.OnAuditLog)
-	a.binlogSyncer.Sync()
-	a.txInfoSyncer.Sync()
+func (log *AuditLogger) Sync(handler Handler) {
+	go log.txInfoSyncer.HandleAuditLog(handler.OnAuditLog)
+	log.binlogSyncer.Sync()
+	log.txInfoSyncer.Sync()
 }
 
 func Init(path string) {

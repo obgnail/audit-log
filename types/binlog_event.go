@@ -14,8 +14,8 @@ type AuditLog struct {
 	BinlogEvents []ChBinlogEvent
 }
 
-func NewAuditLog(txInfo ChTxInfo, events []ChBinlogEvent) AuditLog {
-	txBinlogEvent := AuditLog{
+func NewAuditLog(txInfo ChTxInfo, events []ChBinlogEvent) *AuditLog {
+	txBinlogEvent := &AuditLog{
 		Time:         txInfo.Time,
 		Context:      txInfo.Context,
 		GTID:         txInfo.GTID,

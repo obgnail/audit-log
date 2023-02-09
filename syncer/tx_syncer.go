@@ -20,14 +20,14 @@ const (
 
 type TxInfoSynchronizer struct {
 	*broker.TxKafkaBroker
-	auditChan chan types.AuditLog
+	auditChan chan *types.AuditLog
 }
 
 func NewTxInfoSyncer(broker *broker.TxKafkaBroker) *TxInfoSynchronizer {
-	return &TxInfoSynchronizer{TxKafkaBroker: broker, auditChan: make(chan types.AuditLog, defaultAuditChanSize)}
+	return &TxInfoSynchronizer{TxKafkaBroker: broker, auditChan: make(chan *types.AuditLog, defaultAuditChanSize)}
 }
 
-func (s *TxInfoSynchronizer) HandleAuditLog(fn func(txEvent types.AuditLog) error) {
+func (s *TxInfoSynchronizer) HandleAuditLog(fn func(txEvent *types.AuditLog) error) {
 	for audit := range s.auditChan {
 		if err := fn(audit); err != nil {
 			logger.ErrorDetails(errors.Trace(err))
@@ -187,7 +187,7 @@ func (i *unprocessedInfos) Add(info types.ChTxInfo) {
 }
 
 func (i *unprocessedInfos) getToProcess() (
-	toProcessInfoEvents []types.AuditLog,
+	toProcessInfoEvents []*types.AuditLog,
 	toProcessInfo []types.ChTxInfo,
 	err error,
 ) {
