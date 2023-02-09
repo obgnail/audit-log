@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/common"
+	"github.com/obgnail/audit-log/compose/types"
 	"github.com/obgnail/mysql-river/handler/kafka"
 )
 
@@ -23,7 +23,7 @@ func NewTxKafkaBroker(addrs []string, txInfoTopic string) (*TxKafkaBroker, error
 	return h, nil
 }
 
-func (k *TxKafkaBroker) PushTx(txInfo *common.TxInfo) error {
+func (k *TxKafkaBroker) PushTx(txInfo *types.TxInfo) error {
 	result, err := txInfo.Marshal()
 	if err != nil {
 		return errors.Trace(err)
@@ -34,9 +34,9 @@ func (k *TxKafkaBroker) PushTx(txInfo *common.TxInfo) error {
 	return nil
 }
 
-func (k *TxKafkaBroker) Consume(fn func(info *common.TxInfo) error) error {
+func (k *TxKafkaBroker) Consume(fn func(info *types.TxInfo) error) error {
 	f := func(msg *sarama.ConsumerMessage) error {
-		info := common.TxInfo{}
+		info := types.TxInfo{}
 		if err := json.Unmarshal(msg.Value, &info); err != nil {
 			return errors.Trace(err)
 		}

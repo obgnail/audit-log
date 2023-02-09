@@ -20,6 +20,5 @@ func (a *AuditLogger) Sync(handler Handler) {
 }
 
 func Run(handler Handler) {
-	auditLog := New(syncer.BinlogSyncer, syncer.TxInfoSyncer)
-	auditLog.Sync(handler)
+	New(syncer.BinlogSyncer, syncer.TxInfoSyncer).Sync(handler)
 }

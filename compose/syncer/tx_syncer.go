@@ -3,9 +3,8 @@ package syncer
 import (
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/compose/broker"
-	"github.com/obgnail/audit-log/compose/clickhouse"
-	"github.com/obgnail/audit-log/compose/common"
 	"github.com/obgnail/audit-log/compose/logger"
+	"github.com/obgnail/audit-log/compose/types"
 	"github.com/obgnail/audit-log/config"
 	"time"
 )
@@ -22,17 +21,17 @@ const (
 type TxInfoSynchronizer struct {
 	*broker.TxKafkaBroker
 
-	auditChan chan clickhouse.TxInfoBinlogEvent
+	auditChan chan types.AuditLog
 }
 
 func NewTxInfoSyncer(broker *broker.TxKafkaBroker) *TxInfoSynchronizer {
 	return &TxInfoSynchronizer{
 		TxKafkaBroker: broker,
-		auditChan:     make(chan clickhouse.TxInfoBinlogEvent, defaultAuditChanSize),
+		auditChan:     make(chan types.AuditLog, defaultAuditChanSize),
 	}
 }
 
-func (s *TxInfoSynchronizer) HandleAuditLog(fn func(txEvent clickhouse.TxInfoBinlogEvent) error) {
+func (s *TxInfoSynchronizer) HandleAuditLog(fn func(txEvent types.AuditLog) error) {
 	for audit := range s.auditChan {
 		if err := fn(audit); err != nil {
 			logger.ErrorDetails(errors.Trace(err))
@@ -66,7 +65,7 @@ func (s *TxInfoSynchronizer) handleUnprocessedTxInfo() {
 				s.auditChan <- audit
 			}
 
-			if err := clickhouse.BatchInsertTxInfo(toProcessInfos); err != nil {
+			if err := types.BatchInsertTxInfo(toProcessInfos); err != nil {
 				logger.ErrorDetails(errors.Trace(err))
 				continue
 			}
@@ -74,10 +73,10 @@ func (s *TxInfoSynchronizer) handleUnprocessedTxInfo() {
 	}
 }
 
-func (s *TxInfoSynchronizer) handleFoundNoEventTxInfo(info *common.TxInfo) error {
+func (s *TxInfoSynchronizer) handleFoundNoEventTxInfo(info *types.TxInfo) error {
 	logger.Warn("binlog not found for tx: %s", info.GTID)
-	chInfo := clickhouse.ConvertCHFormatTxInfo(info, clickhouse.StatusTxInfoUnprocessed)
-	if err := clickhouse.InsertTxInfo(chInfo); err != nil {
+	chInfo := info.ChTxInfo(types.StatusTxInfoUnprocessed)
+	if err := types.InsertTxInfo(chInfo); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -86,7 +85,7 @@ func (s *TxInfoSynchronizer) handleFoundNoEventTxInfo(info *common.TxInfo) error
 // processTxInfo 如果一条 tx_info 轮训了3次（3s）, 仍然没有找到完整的 binlog_event 则将这个 tx_info
 // 存入 tx_info 表且状态标记为未完成，processTxInfo 继续消费 kafka 中另外的 tx_info message.
 // 另外开一个 goroutine 轮训 tx_info 中过去 72 小时未完成的数据。
-func (s *TxInfoSynchronizer) processTxInfo(info *common.TxInfo) error {
+func (s *TxInfoSynchronizer) processTxInfo(info *types.TxInfo) error {
 	events, err := tryListBinlogEvents(info.GTID)
 	if err != nil {
 		return errors.Trace(err)
@@ -98,12 +97,12 @@ func (s *TxInfoSynchronizer) processTxInfo(info *common.TxInfo) error {
 		return nil
 	}
 
-	chInfo := clickhouse.ConvertCHFormatTxInfo(info, clickhouse.StatusTxInfoProcessed)
-	infoEvents := clickhouse.CombineTxAndEvents(chInfo, events)
+	chInfo := info.ChTxInfo(types.StatusTxInfoProcessed)
+	infoEvents := types.NewAuditLog(chInfo, events)
 
 	s.auditChan <- infoEvents
 
-	err = clickhouse.InsertTxInfo(chInfo)
+	err = types.InsertTxInfo(chInfo)
 	return nil
 }
 
@@ -112,14 +111,16 @@ func (s *TxInfoSynchronizer) processTxInfo(info *common.TxInfo) error {
 func (s *TxInfoSynchronizer) Sync() {
 	go s.handleUnprocessedTxInfo()
 
-	err := s.TxKafkaBroker.Consume(s.processTxInfo)
-	if err != nil {
-		logger.ErrorDetails(errors.Trace(err))
-	}
+	go func() {
+		err := s.TxKafkaBroker.Consume(s.processTxInfo)
+		if err != nil {
+			logger.ErrorDetails(errors.Trace(err))
+		}
+	}()
 }
 
-func tryListBinlogEvents(gtid string) ([]clickhouse.BinlogEvent, error) {
-	events, err := clickhouse.ListBinlogEvent(gtid)
+func tryListBinlogEvents(gtid string) ([]types.ChBinlogEvent, error) {
+	events, err := types.ListBinlogEvent(gtid)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -134,7 +135,7 @@ func tryListBinlogEvents(gtid string) ([]clickhouse.BinlogEvent, error) {
 	for {
 		select {
 		case <-ticker.C:
-			events, err = clickhouse.ListBinlogEvent(gtid)
+			events, err = types.ListBinlogEvent(gtid)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -153,11 +154,11 @@ func tryListBinlogEvents(gtid string) ([]clickhouse.BinlogEvent, error) {
 type unprocessedInfos struct {
 	minTime      time.Time
 	gtidArr      []string
-	mapGtid2Info map[string]clickhouse.TxInfo
+	mapGtid2Info map[string]types.ChTxInfo
 }
 
 func getUnprocessedInfos() (*unprocessedInfos, error) {
-	infos, err := clickhouse.ListUnprocessedTxInfo()
+	infos, err := types.ListUnprocessedTxInfo()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -168,7 +169,7 @@ func getUnprocessedInfos() (*unprocessedInfos, error) {
 	result := &unprocessedInfos{
 		minTime:      infos[0].Time,
 		gtidArr:      make([]string, len(infos)),
-		mapGtid2Info: make(map[string]clickhouse.TxInfo, len(infos)),
+		mapGtid2Info: make(map[string]types.ChTxInfo, len(infos)),
 	}
 
 	for _, info := range infos {
@@ -181,7 +182,7 @@ func (i *unprocessedInfos) Empty() bool {
 	return i == nil || len(i.gtidArr) == 0
 }
 
-func (i *unprocessedInfos) Add(info clickhouse.TxInfo) {
+func (i *unprocessedInfos) Add(info types.ChTxInfo) {
 	if info.Time.UnixNano() < i.minTime.UnixNano() {
 		i.minTime = info.Time
 	}
@@ -190,16 +191,16 @@ func (i *unprocessedInfos) Add(info clickhouse.TxInfo) {
 }
 
 func (i *unprocessedInfos) getToProcess() (
-	toProcessInfoEvents []clickhouse.TxInfoBinlogEvent,
-	toProcessInfo []clickhouse.TxInfo,
+	toProcessInfoEvents []types.AuditLog,
+	toProcessInfo []types.ChTxInfo,
 	err error,
 ) {
-	toProcessEvents, err := clickhouse.ListBinlogEvents(i.gtidArr)
+	toProcessEvents, err := types.ListBinlogEvents(i.gtidArr)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
 
-	mapGtid2Events := make(map[string][]clickhouse.BinlogEvent)
+	mapGtid2Events := make(map[string][]types.ChBinlogEvent)
 	for _, event := range toProcessEvents {
 		mapGtid2Events[event.GTID] = append(mapGtid2Events[event.GTID], event)
 	}
@@ -210,10 +211,10 @@ func (i *unprocessedInfos) getToProcess() (
 			continue
 		}
 
-		toProcessInfoEvent := clickhouse.CombineTxAndEvents(info, gEvents)
+		toProcessInfoEvent := types.NewAuditLog(info, gEvents)
 		toProcessInfoEvents = append(toProcessInfoEvents, toProcessInfoEvent)
 
-		info.Status = clickhouse.StatusTxInfoProcessed
+		info.Status = types.StatusTxInfoProcessed
 		toProcessInfo = append(toProcessInfo, info)
 	}
 	return toProcessInfoEvents, toProcessInfo, nil

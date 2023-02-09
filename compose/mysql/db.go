@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/common"
 	"github.com/obgnail/audit-log/compose/logger"
 	"github.com/obgnail/audit-log/compose/syncer"
+	"github.com/obgnail/audit-log/compose/types"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gorp.v1"
 	"reflect"
@@ -48,7 +48,7 @@ func DBMTransact(ctx string, txFunc func(tx *gorp.Transaction) error) (err error
 		GTIDField := txiField.FieldByName("GTID")
 		GTIDValue := GTIDField.String()
 		if checkGTID(GTIDValue) {
-			t := common.NewTxInfo(ctx, GTIDValue)
+			t := types.NewTxInfo(ctx, GTIDValue)
 			if err := syncer.TxInfoSyncer.PushTx(t); err != nil {
 				logger.ErrorDetails(errors.Trace(err))
 				logger.Error("GTIDField: %s, GTIDValue: %s\n", GTIDField, GTIDValue)

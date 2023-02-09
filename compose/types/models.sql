@@ -20,16 +20,3 @@ CREATE TABLE tx_info
       PARTITION BY toYYYYMM(time) ORDER BY gtid
       TTL toDateTime(time) + INTERVAL 60 DAY;
 
-CREATE TABLE audit_log
-(
-    `gtid`           String,
-    `context`        String,
-    `operator_uuid`  String,
-    `action`         Int32,
-    `action_context` Int32,
-    `object_type`    String,
-    `data`           String,
-    `ip`             Nullable(IPv4),
-    `tx_time`        DateTime64(3, 'Asia/Shanghai')
-) ENGINE = MergeTree()
-      PARTITION BY toYYYYMM(tx_time) ORDER BY (toDateTime(tx_time), context, action, operator_uuid);

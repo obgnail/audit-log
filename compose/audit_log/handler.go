@@ -2,22 +2,22 @@ package audit_log
 
 import (
 	"fmt"
-	"github.com/obgnail/audit-log/compose/clickhouse"
+	"github.com/obgnail/audit-log/compose/types"
 )
 
 type Handler interface {
-	OnAuditLog(auditLog clickhouse.TxInfoBinlogEvent) error
+	OnAuditLog(auditLog types.AuditLog) error
 }
 
-type FunctionHandler func(auditLog clickhouse.TxInfoBinlogEvent) error
+type FunctionHandler func(auditLog types.AuditLog) error
 
-func (f FunctionHandler) OnAuditLog(auditLog clickhouse.TxInfoBinlogEvent) error {
+func (f FunctionHandler) OnAuditLog(auditLog types.AuditLog) error {
 	return f(auditLog)
 }
 
-type DummyAuditLogHandler func(auditLog clickhouse.TxInfoBinlogEvent) error
+type DummyAuditLogHandler func(auditLog types.AuditLog) error
 
-func (f DummyAuditLogHandler) OnAuditLog(auditLog clickhouse.TxInfoBinlogEvent) error {
+func (f DummyAuditLogHandler) OnAuditLog(auditLog types.AuditLog) error {
 	fmt.Printf("get audit log: %+v", auditLog)
 	return nil
 }

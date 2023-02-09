@@ -1,22 +1,21 @@
-package clickhouse
+package types
 
 import (
 	"context"
-	"github.com/obgnail/audit-log/compose/common"
-	"time"
-
 	"github.com/juju/errors"
+	"github.com/obgnail/audit-log/compose/clickhouse"
+	"time"
 )
 
-type TxInfoBinlogEvent struct {
+type AuditLog struct {
 	Time         time.Time `ch:"time"`
 	Context      string    `ch:"context"`
 	GTID         string    `ch:"gtid"`
-	BinlogEvents []BinlogEvent
+	BinlogEvents []ChBinlogEvent
 }
 
-func CombineTxAndEvents(txInfo TxInfo, events []BinlogEvent) TxInfoBinlogEvent {
-	txBinlogEvent := TxInfoBinlogEvent{
+func NewAuditLog(txInfo ChTxInfo, events []ChBinlogEvent) AuditLog {
+	txBinlogEvent := AuditLog{
 		Time:         txInfo.Time,
 		Context:      txInfo.Context,
 		GTID:         txInfo.GTID,
@@ -25,7 +24,7 @@ func CombineTxAndEvents(txInfo TxInfo, events []BinlogEvent) TxInfoBinlogEvent {
 	return txBinlogEvent
 }
 
-type BinlogEvent struct {
+type ChBinlogEvent struct {
 	Db     string `ch:"db"`
 	Table  string `ch:"table"`
 	Action int32  `ch:"action"`
@@ -33,36 +32,26 @@ type BinlogEvent struct {
 	Data   string `ch:"data"`
 }
 
-func ConvertCHFormatBinlogEvent(binlog *common.BinlogEvent) BinlogEvent {
-	return BinlogEvent{
-		Db:     binlog.Db,
-		Table:  binlog.Table,
-		Action: int32(binlog.Action),
-		GTID:   binlog.GTID,
-		Data:   string(binlog.Data),
-	}
-}
-
-func ListBinlogEvent(gtid string) ([]BinlogEvent, error) {
-	var result []BinlogEvent
+func ListBinlogEvent(gtid string) ([]ChBinlogEvent, error) {
+	var result []ChBinlogEvent
 	s := "SELECT db, table, action, data, gtid FROM binlog_event WHERE gtid=$1;"
-	err := CH.Select(context.Background(), &result, s, gtid)
+	err := clickhouse.CH.Select(context.Background(), &result, s, gtid)
 	return result, errors.Trace(err)
 }
 
-func ListBinlogEvents(gtids []string) ([]BinlogEvent, error) {
-	var result []BinlogEvent
+func ListBinlogEvents(gtidList []string) ([]ChBinlogEvent, error) {
+	var result []ChBinlogEvent
 	s := "SELECT db, table, action, data, gtid FROM binlog_event WHERE gtid IN ($1);"
-	err := CH.Select(context.Background(), &result, s, gtids)
+	err := clickhouse.CH.Select(context.Background(), &result, s, gtidList)
 	return result, errors.Trace(err)
 }
 
-func InsertBinlogEvents(binlogEvents []BinlogEvent) error {
+func InsertBinlogEvents(binlogEvents []ChBinlogEvent) error {
 	length := len(binlogEvents)
 	if length == 0 {
 		return nil
 	}
-	batch, err := CH.PrepareBatch(context.Background(),
+	batch, err := clickhouse.CH.PrepareBatch(context.Background(),
 		"INSERT INTO binlog_event (db, table, action, gtid, data) VALUES")
 	if err != nil {
 		return errors.Trace(err)

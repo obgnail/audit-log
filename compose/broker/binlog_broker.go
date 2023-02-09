@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/common"
 	"github.com/obgnail/audit-log/compose/logger"
+	"github.com/obgnail/audit-log/compose/types"
 	"github.com/obgnail/mysql-river/handler/kafka"
 	"github.com/obgnail/mysql-river/river"
 	"strings"
@@ -60,7 +60,7 @@ func (b *BinlogKafkaBroker) marshaller(event *river.EventData) ([]byte, error) {
 	switch event.EventType {
 	case river.EventTypeInsert, river.EventTypeUpdate, river.EventTypeDelete:
 		if b.check(event.Db, event.Table) {
-			binlog, err := common.NewBinlogEvent(event)
+			binlog, err := types.NewBinlogEvent(event)
 			if err != nil {
 				logger.ErrorDetails(errors.Trace(err))
 				return nil, nil
@@ -95,9 +95,9 @@ func (b *BinlogKafkaBroker) Pipe(river *river.River, from river.From) error {
 }
 
 // Consume 消费kafka中的数据
-func (b *BinlogKafkaBroker) Consume(fn func(*common.BinlogEvent) error) error {
+func (b *BinlogKafkaBroker) Consume(fn func(*types.BinlogEvent) error) error {
 	consumer := func(msg *sarama.ConsumerMessage) error {
-		event := common.BinlogEvent{}
+		event := types.BinlogEvent{}
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			return errors.Trace(err)
 		}

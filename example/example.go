@@ -5,8 +5,8 @@ import (
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/compose"
 	"github.com/obgnail/audit-log/compose/audit_log"
-	"github.com/obgnail/audit-log/compose/clickhouse"
 	"github.com/obgnail/audit-log/compose/mysql"
+	"github.com/obgnail/audit-log/compose/types"
 	"github.com/obgnail/audit-log/context"
 	"github.com/obgnail/audit-log/utils/uuid"
 	"gopkg.in/gorp.v1"
@@ -16,7 +16,7 @@ import (
 func main() {
 	compose.Init("../config/config.toml")
 
-	audit_log.Run(audit_log.FunctionHandler(func(auditLog clickhouse.TxInfoBinlogEvent) error {
+	audit_log.Run(audit_log.FunctionHandler(func(auditLog types.AuditLog) error {
 		fmt.Printf("get audit log: %+v", auditLog)
 		return nil
 	}))

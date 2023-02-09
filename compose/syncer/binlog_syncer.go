@@ -3,9 +3,8 @@ package syncer
 import (
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/compose/broker"
-	"github.com/obgnail/audit-log/compose/clickhouse"
-	"github.com/obgnail/audit-log/compose/common"
 	"github.com/obgnail/audit-log/compose/logger"
+	"github.com/obgnail/audit-log/compose/types"
 	"github.com/obgnail/audit-log/config"
 	"github.com/obgnail/mysql-river/handler/kafka"
 	"github.com/obgnail/mysql-river/river"
@@ -23,20 +22,20 @@ type BinlogSynchronizer struct {
 	*river.River
 	*broker.BinlogKafkaBroker
 
-	syncChan chan *common.BinlogEvent
+	syncChan chan *types.BinlogEvent
 }
 
 func NewBinlogSyncer(river *river.River, broker *broker.BinlogKafkaBroker) *BinlogSynchronizer {
 	s := &BinlogSynchronizer{
 		River:             river,
 		BinlogKafkaBroker: broker,
-		syncChan:          make(chan *common.BinlogEvent, defaultSyncChanSize),
+		syncChan:          make(chan *types.BinlogEvent, defaultSyncChanSize),
 	}
 	return s
 }
 
 func (s *BinlogSynchronizer) batchSend2Clickhouse() {
-	var bulk []clickhouse.BinlogEvent
+	var bulk []types.ChBinlogEvent
 
 	ticker := time.NewTicker(defaultBatchSendInterval)
 	defer ticker.Stop()
@@ -47,13 +46,13 @@ func (s *BinlogSynchronizer) batchSend2Clickhouse() {
 		case <-ticker.C:
 			needSend = true
 		case event := <-s.syncChan:
-			binlogEvent := clickhouse.ConvertCHFormatBinlogEvent(event)
-			bulk = append(bulk, binlogEvent)
+			chEvent := event.ChEvent()
+			bulk = append(bulk, chEvent)
 			needSend = len(bulk) >= defaultBulkSize
 		}
 
 		if needSend && len(bulk) != 0 {
-			err := clickhouse.InsertBinlogEvents(bulk)
+			err := types.InsertBinlogEvents(bulk)
 			if err != nil {
 				logger.ErrorDetails(errors.Trace(err))
 				logger.Error("error events:")
@@ -70,7 +69,7 @@ func (s *BinlogSynchronizer) Sync() {
 	go s.batchSend2Clickhouse()
 
 	go func() {
-		err := s.BinlogKafkaBroker.Consume(func(event *common.BinlogEvent) error {
+		err := s.BinlogKafkaBroker.Consume(func(event *types.BinlogEvent) error {
 			s.syncChan <- event
 			return nil
 		})

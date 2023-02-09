@@ -1,9 +1,9 @@
-package clickhouse
+package types
 
 import (
 	"context"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/common"
+	"github.com/obgnail/audit-log/compose/clickhouse"
 	"time"
 )
 
@@ -16,26 +16,17 @@ const (
 	timeLayout = "2006-01-02 15:04:05.000"
 )
 
-type TxInfo struct {
+type ChTxInfo struct {
 	Time    time.Time `json:"time" ch:"time"`
 	Context string    `json:"context" ch:"context"`
 	GTID    string    `json:"gtid" ch:"gtid"`
 	Status  uint8     `json:"-" ch:"-"`
 }
 
-func ConvertCHFormatTxInfo(txInfo *common.TxInfo, status uint8) TxInfo {
-	return TxInfo{
-		Time:    time.Unix(txInfo.Time, 0),
-		Context: txInfo.Context,
-		GTID:    txInfo.GTID,
-		Status:  status,
-	}
-}
-
-func InsertTxInfo(txInfo TxInfo) error {
+func InsertTxInfo(txInfo ChTxInfo) error {
 	sql := "INSERT INTO tx_info (gtid, context, time, `status`) VALUES ($1, $2, $3, $4);"
 
-	err := CH.Exec(context.Background(), sql,
+	err := clickhouse.CH.Exec(context.Background(), sql,
 		txInfo.GTID,
 		txInfo.Context,
 		txInfo.Time,
@@ -47,13 +38,13 @@ func InsertTxInfo(txInfo TxInfo) error {
 	return nil
 }
 
-func BatchInsertTxInfo(txInfoArr []TxInfo) error {
+func BatchInsertTxInfo(txInfoArr []ChTxInfo) error {
 	length := len(txInfoArr)
 	if length == 0 {
 		return nil
 	}
 
-	batch, err := CH.PrepareBatch(context.Background(), "INSERT INTO tx_info VALUES")
+	batch, err := clickhouse.CH.PrepareBatch(context.Background(), "INSERT INTO tx_info VALUES")
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -89,12 +80,12 @@ func BatchInsertTxInfo(txInfoArr []TxInfo) error {
 	return nil
 }
 
-func ListUnprocessedTxInfo() ([]TxInfo, error) {
+func ListUnprocessedTxInfo() ([]ChTxInfo, error) {
 	sql := "SELECT gtid, context, time FROM tx_info " +
 		"WHERE `status`=$1 AND time>=toDateTime64($2, 3) ORDER BY time DESC LIMIT 1000;"
-	results := make([]TxInfo, 0)
+	results := make([]ChTxInfo, 0)
 	t := time.Now().Add(time.Hour * 72 * -1)
-	err := CH.Select(context.Background(), &results, sql, StatusTxInfoUnprocessed, t.Format(timeLayout))
+	err := clickhouse.CH.Select(context.Background(), &results, sql, StatusTxInfoUnprocessed, t.Format(timeLayout))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

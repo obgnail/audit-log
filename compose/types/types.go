@@ -1,4 +1,4 @@
-package common
+package types
 
 import (
 	"database/sql"
@@ -36,6 +36,16 @@ type BinlogEvent struct {
 	GTID   string       `json:"gtid"`
 	Time   int64        `json:"time"`
 	Data   sql.RawBytes `json:"data"`
+}
+
+func (e *BinlogEvent) ChEvent() ChBinlogEvent {
+	return ChBinlogEvent{
+		Db:     e.Db,
+		Table:  e.Table,
+		Action: int32(e.Action),
+		GTID:   e.GTID,
+		Data:   string(e.Data),
+	}
 }
 
 func (e *BinlogEvent) Marshal() ([]byte, error) {
@@ -95,6 +105,15 @@ type TxInfo struct {
 	Time    int64  `db:"time" json:"time"`
 	Context string `db:"context" json:"context"`
 	GTID    string `db:"gtid" json:"gtid"`
+}
+
+func (t *TxInfo) ChTxInfo(status uint8) ChTxInfo {
+	return ChTxInfo{
+		Time:    time.Unix(t.Time, 0),
+		Context: t.Context,
+		GTID:    t.GTID,
+		Status:  status,
+	}
 }
 
 func (t *TxInfo) Marshal() ([]byte, error) {
