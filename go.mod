@@ -2,14 +2,11 @@ module github.com/obgnail/audit-log
 
 go 1.18
 
-replace github.com/obgnail/audit-log/go-mysql-driver => ./mysql/go-mysql-driver
-
 require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.12
 	github.com/Shopify/sarama v1.37.0
 	github.com/juju/errors v0.0.0-20220203013757-bd733f3c86b9
-	github.com/obgnail/audit-log/go-mysql-driver v0.0.0-00010101000000-000000000000
 	github.com/obgnail/mysql-river v0.0.0-20230209124253-5cfe7a909806
 	github.com/satori/go.uuid v1.2.0
 	gopkg.in/gorp.v1 v1.7.2

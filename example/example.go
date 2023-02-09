@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	audit_log.Init("../config/config.toml")
+	audit_log.Init("./config/config.toml")
 
 	audit_log.Run(audit_log.FunctionHandler(func(auditLog *types.AuditLog) error {
 		fmt.Printf("get audit log: %+v\n", *auditLog)

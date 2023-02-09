@@ -74,7 +74,20 @@ var (
 	ClickHouse    *ClickHouseConfig
 )
 
+func FindConfigPath(configPath string) string {
+	// 向上找5层, 满足在一些单元测试中加载不了配置文件的问题
+	for i := 0; i < 5; i++ {
+		if _, err := os.Stat(configPath); err == nil {
+			return configPath
+		} else {
+			configPath = "../" + configPath
+		}
+	}
+	panic("not found config file in path")
+}
+
 func InitConfig(path string) error {
+	path = FindConfigPath(path)
 	var cfg MainConfig
 	f, err := os.Open(path)
 	if err != nil {

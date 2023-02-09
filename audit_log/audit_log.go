@@ -1,6 +1,7 @@
 package audit_log
 
 import (
+	"fmt"
 	"github.com/obgnail/audit-log/clickhouse"
 	"github.com/obgnail/audit-log/config"
 	"github.com/obgnail/audit-log/logger"
@@ -24,17 +25,19 @@ func (log *AuditLogger) Sync(handler Handler) {
 }
 
 func Init(path string) {
-	checkErr(config.InitConfig(path))
-	checkErr(logger.InitLogger())
-	checkErr(syncer.InitBinlogSyncer())
-	checkErr(syncer.InitTxInfoSyncer())
-	checkErr(mysql.InitDBM())
-	checkErr(clickhouse.InitClickHouse())
+	if err := config.InitConfig(path); err != nil {
+		panic(err)
+	}
+	onStart(logger.InitLogger)
+	onStart(syncer.InitBinlogSyncer)
+	onStart(syncer.InitTxInfoSyncer)
+	onStart(mysql.InitDBM)
+	onStart(clickhouse.InitClickHouse)
 }
 
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
+func onStart(fn func() error) {
+	if err := fn(); err != nil {
+		panic(fmt.Sprintf("Error at onStart: %s\n", err))
 	}
 }
 

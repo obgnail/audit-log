@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/config"
-	_ "github.com/obgnail/audit-log/go-mysql-driver"
+	_ "github.com/obgnail/audit-log/mysql/go-mysql-driver"
 	"gopkg.in/gorp.v1"
 	"time"
 )
