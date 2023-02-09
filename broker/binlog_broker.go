@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/logger"
-	"github.com/obgnail/audit-log/compose/types"
+	"github.com/obgnail/audit-log/logger"
+	"github.com/obgnail/audit-log/types"
 	"github.com/obgnail/mysql-river/handler/kafka"
 	"github.com/obgnail/mysql-river/river"
 	"strings"
@@ -17,8 +17,8 @@ type BinlogBrokerConfig struct {
 }
 
 type BinlogKafkaBroker struct {
-	include map[string]map[string]struct{} // map[db]map[table]struct{}
-	*kafka.Broker
+	include       map[string]map[string]struct{} // map[db]map[table]struct{}
+	defaultBroker *kafka.Broker
 }
 
 func New(cfg *BinlogBrokerConfig) (*BinlogKafkaBroker, error) {
@@ -33,17 +33,18 @@ func New(cfg *BinlogBrokerConfig) (*BinlogKafkaBroker, error) {
 		mapDb2Table[db][table] = struct{}{}
 	}
 	h.include = mapDb2Table
+
 	var err error
-	h.Broker, err = kafka.New(cfg.KafkaConfig)
+	h.defaultBroker, err = kafka.New(cfg.KafkaConfig)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	h.Broker.SetEventMarshaller(h.marshaller)
+	h.defaultBroker.SetHandler(h)
 	return h, nil
 }
 
 func (b *BinlogKafkaBroker) String() string {
-	return "binlog kafka broker"
+	return "kafka broker"
 }
 
 func (b *BinlogKafkaBroker) check(db, table string) bool {
@@ -56,7 +57,7 @@ func (b *BinlogKafkaBroker) check(db, table string) bool {
 	return true
 }
 
-func (b *BinlogKafkaBroker) marshaller(event *river.EventData) ([]byte, error) {
+func (b *BinlogKafkaBroker) Marshal(event *river.EventData) ([]byte, error) {
 	switch event.EventType {
 	case river.EventTypeInsert, river.EventTypeUpdate, river.EventTypeDelete:
 		if b.check(event.Db, event.Table) {
@@ -88,7 +89,7 @@ func (b *BinlogKafkaBroker) OnClose(r *river.River) {
 
 // Pipe 将river中的数据流向kafka
 func (b *BinlogKafkaBroker) Pipe(river *river.River, from river.From) error {
-	if err := b.Broker.Pipe(river, from); err != nil {
+	if err := b.defaultBroker.Pipe(river, from); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -107,7 +108,7 @@ func (b *BinlogKafkaBroker) Consume(fn func(*types.BinlogEvent) error) error {
 		return nil
 	}
 
-	if err := b.Broker.Consume(consumer); err != nil {
+	if err := b.defaultBroker.Consume(consumer); err != nil {
 		return errors.Trace(err)
 	}
 	return nil

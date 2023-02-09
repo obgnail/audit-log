@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/clickhouse"
+	"github.com/obgnail/audit-log/clickhouse"
 	"time"
 )
 

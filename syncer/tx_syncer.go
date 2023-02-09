@@ -2,10 +2,10 @@ package syncer
 
 import (
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/broker"
-	"github.com/obgnail/audit-log/compose/logger"
-	"github.com/obgnail/audit-log/compose/types"
+	"github.com/obgnail/audit-log/broker"
 	"github.com/obgnail/audit-log/config"
+	"github.com/obgnail/audit-log/logger"
+	"github.com/obgnail/audit-log/types"
 	"time"
 )
 
@@ -20,15 +20,11 @@ const (
 
 type TxInfoSynchronizer struct {
 	*broker.TxKafkaBroker
-
 	auditChan chan types.AuditLog
 }
 
 func NewTxInfoSyncer(broker *broker.TxKafkaBroker) *TxInfoSynchronizer {
-	return &TxInfoSynchronizer{
-		TxKafkaBroker: broker,
-		auditChan:     make(chan types.AuditLog, defaultAuditChanSize),
-	}
+	return &TxInfoSynchronizer{TxKafkaBroker: broker, auditChan: make(chan types.AuditLog, defaultAuditChanSize)}
 }
 
 func (s *TxInfoSynchronizer) HandleAuditLog(fn func(txEvent types.AuditLog) error) {

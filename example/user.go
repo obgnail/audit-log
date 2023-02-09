@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/mysql"
+	"github.com/obgnail/audit-log/mysql"
 	"gopkg.in/gorp.v1"
 )
 

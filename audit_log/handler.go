@@ -2,7 +2,7 @@ package audit_log
 
 import (
 	"fmt"
-	"github.com/obgnail/audit-log/compose/types"
+	"github.com/obgnail/audit-log/types"
 )
 
 type Handler interface {

@@ -2,10 +2,10 @@ package syncer
 
 import (
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/broker"
-	"github.com/obgnail/audit-log/compose/logger"
-	"github.com/obgnail/audit-log/compose/types"
+	"github.com/obgnail/audit-log/broker"
 	"github.com/obgnail/audit-log/config"
+	"github.com/obgnail/audit-log/logger"
+	"github.com/obgnail/audit-log/types"
 	"github.com/obgnail/mysql-river/handler/kafka"
 	"github.com/obgnail/mysql-river/river"
 	"time"
@@ -19,17 +19,17 @@ const (
 
 // BinlogSynchronizer 将river中的数据通过broker流向clickhouse
 type BinlogSynchronizer struct {
-	*river.River
-	*broker.BinlogKafkaBroker
+	river  *river.River
+	broker *broker.BinlogKafkaBroker
 
 	syncChan chan *types.BinlogEvent
 }
 
 func NewBinlogSyncer(river *river.River, broker *broker.BinlogKafkaBroker) *BinlogSynchronizer {
 	s := &BinlogSynchronizer{
-		River:             river,
-		BinlogKafkaBroker: broker,
-		syncChan:          make(chan *types.BinlogEvent, defaultSyncChanSize),
+		river:    river,
+		broker:   broker,
+		syncChan: make(chan *types.BinlogEvent, defaultSyncChanSize),
 	}
 	return s
 }
@@ -69,7 +69,7 @@ func (s *BinlogSynchronizer) Sync() {
 	go s.batchSend2Clickhouse()
 
 	go func() {
-		err := s.BinlogKafkaBroker.Consume(func(event *types.BinlogEvent) error {
+		err := s.broker.Consume(func(event *types.BinlogEvent) error {
 			s.syncChan <- event
 			return nil
 		})
@@ -78,7 +78,7 @@ func (s *BinlogSynchronizer) Sync() {
 		}
 	}()
 	go func() {
-		err := s.BinlogKafkaBroker.Pipe(s.River, river.FromFile)
+		err := s.broker.Pipe(s.river, river.FromFile)
 		if err != nil {
 			logger.ErrorDetails(errors.Trace(err))
 		}

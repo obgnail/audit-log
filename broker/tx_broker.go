@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"github.com/juju/errors"
-	"github.com/obgnail/audit-log/compose/types"
+	"github.com/obgnail/audit-log/types"
 	"github.com/obgnail/mysql-river/handler/kafka"
 )
 
