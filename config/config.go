@@ -7,12 +7,18 @@ import (
 )
 
 type MainConfig struct {
+	Log           *LogConfig             `toml:"log"`
 	Mysql         *MySqlConfig           `toml:"mysql"`
 	PositionSaver *PosAutoSaverConfig    `toml:"position_saver"`
 	HealthChecker *HealthCheckerConfig   `toml:"health_checker"`
 	AuditLog      *AuditLogHandlerConfig `toml:"audit_log"`
 	Kafka         *KafkaConfig           `toml:"kafka"`
 	ClickHouse    *ClickHouseConfig      `toml:"clickhouse"`
+}
+
+type LogConfig struct {
+	LogFile  string `toml:"file"`
+	LogLevel string `toml:"level"`
 }
 
 type MySqlConfig struct {

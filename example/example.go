@@ -4,27 +4,22 @@ import (
 	"fmt"
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/compose"
+	"github.com/obgnail/audit-log/compose/audit_log"
+	"github.com/obgnail/audit-log/compose/clickhouse"
 	"github.com/obgnail/audit-log/compose/mysql"
-	"github.com/obgnail/audit-log/compose/syncer"
 	"github.com/obgnail/audit-log/context"
 	"github.com/obgnail/audit-log/utils/uuid"
-	r "github.com/obgnail/mysql-river/river"
 	"gopkg.in/gorp.v1"
 	"time"
 )
 
 func main() {
 	compose.Init("../config/config.toml")
-}
 
-func main2() {
-	compose.Init("../config/config.toml")
-
-	go func() {
-		if err := syncer.BinlogSyncer.Sync(r.FromDB); err != nil {
-			panic(err)
-		}
-	}()
+	audit_log.Run(audit_log.FunctionHandler(func(auditLog clickhouse.TxInfoBinlogEvent) error {
+		fmt.Printf("get audit log: %+v", auditLog)
+		return nil
+	}))
 
 	time.Sleep(time.Second * 3)
 

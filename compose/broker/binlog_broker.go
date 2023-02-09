@@ -5,6 +5,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/juju/errors"
 	"github.com/obgnail/audit-log/compose/common"
+	"github.com/obgnail/audit-log/compose/logger"
 	"github.com/obgnail/mysql-river/handler/kafka"
 	"github.com/obgnail/mysql-river/river"
 	"strings"
@@ -32,32 +33,42 @@ func New(cfg *BinlogBrokerConfig) (*BinlogKafkaBroker, error) {
 		mapDb2Table[db][table] = struct{}{}
 	}
 	h.include = mapDb2Table
-
 	var err error
 	h.Broker, err = kafka.New(cfg.KafkaConfig)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	h.Broker.SetHandler(h.handler)
-
+	h.Broker.SetEventMarshaller(h.marshaller)
 	return h, nil
 }
 
 func (b *BinlogKafkaBroker) String() string {
-	return "audit log"
+	return "binlog kafka broker"
 }
 
-func (b *BinlogKafkaBroker) handler(event *river.EventData) ([]byte, error) {
+func (b *BinlogKafkaBroker) check(db, table string) bool {
+	if _, ok := b.include[db]; !ok {
+		return false
+	}
+	if _, ok := b.include[db][table]; !ok {
+		return false
+	}
+	return true
+}
+
+func (b *BinlogKafkaBroker) marshaller(event *river.EventData) ([]byte, error) {
 	switch event.EventType {
 	case river.EventTypeInsert, river.EventTypeUpdate, river.EventTypeDelete:
 		if b.check(event.Db, event.Table) {
 			binlog, err := common.NewBinlogEvent(event)
 			if err != nil {
-				return nil, errors.Trace(err)
+				logger.ErrorDetails(errors.Trace(err))
+				return nil, nil
 			}
 			result, err := binlog.Marshal()
 			if err != nil {
-				return nil, errors.Trace(err)
+				logger.ErrorDetails(errors.Trace(err))
+				return nil, nil
 			}
 			return result, nil
 		}
@@ -66,15 +77,24 @@ func (b *BinlogKafkaBroker) handler(event *river.EventData) ([]byte, error) {
 }
 
 func (b *BinlogKafkaBroker) OnAlert(msg *river.StatusMsg) error {
-	river.Logger.Warnf("on alert: %+v", *msg)
+	logger.Warn("binlog broker on alert: %+v", *msg)
 	return nil
 }
 
-func (b *BinlogKafkaBroker) OnClose(*river.River) {
-	river.Logger.Error("audit log had done")
+func (b *BinlogKafkaBroker) OnClose(r *river.River) {
+	logger.ErrorDetails(r.Error)
 	return
 }
 
+// Pipe 将river中的数据流向kafka
+func (b *BinlogKafkaBroker) Pipe(river *river.River, from river.From) error {
+	if err := b.Broker.Pipe(river, from); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+// Consume 消费kafka中的数据
 func (b *BinlogKafkaBroker) Consume(fn func(*common.BinlogEvent) error) error {
 	consumer := func(msg *sarama.ConsumerMessage) error {
 		event := common.BinlogEvent{}
@@ -91,14 +111,4 @@ func (b *BinlogKafkaBroker) Consume(fn func(*common.BinlogEvent) error) error {
 		return errors.Trace(err)
 	}
 	return nil
-}
-
-func (b *BinlogKafkaBroker) check(db, table string) bool {
-	if _, ok := b.include[db]; !ok {
-		return false
-	}
-	if _, ok := b.include[db][table]; !ok {
-		return false
-	}
-	return true
 }

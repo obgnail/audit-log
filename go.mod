@@ -10,7 +10,7 @@ require (
 	github.com/Shopify/sarama v1.37.0
 	github.com/juju/errors v0.0.0-20220203013757-bd733f3c86b9
 	github.com/obgnail/audit-log/go-mysql-driver v0.0.0-00010101000000-000000000000
-	github.com/obgnail/mysql-river v0.0.0-20230207123812-f047d44dd819
+	github.com/obgnail/mysql-river v0.0.0-20230208182038-dc88b534228c
 	github.com/satori/go.uuid v1.2.0
 	gopkg.in/gorp.v1 v1.7.2
 )

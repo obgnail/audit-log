@@ -34,3 +34,7 @@ user = "default"
 password = ""
 db = "audit_log"
 debug = false
+
+[log]
+file = "auditlog.log"
+level = "debug"

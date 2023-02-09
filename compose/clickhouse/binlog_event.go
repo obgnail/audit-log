@@ -15,6 +15,16 @@ type TxInfoBinlogEvent struct {
 	BinlogEvents []BinlogEvent
 }
 
+func CombineTxAndEvents(txInfo TxInfo, events []BinlogEvent) TxInfoBinlogEvent {
+	txBinlogEvent := TxInfoBinlogEvent{
+		Time:         txInfo.Time,
+		Context:      txInfo.Context,
+		GTID:         txInfo.GTID,
+		BinlogEvents: events,
+	}
+	return txBinlogEvent
+}
+
 type BinlogEvent struct {
 	Db     string `ch:"db"`
 	Table  string `ch:"table"`
@@ -23,7 +33,7 @@ type BinlogEvent struct {
 	Data   string `ch:"data"`
 }
 
-func ConvertBinlog(binlog *common.BinlogEvent) BinlogEvent {
+func ConvertCHFormatBinlogEvent(binlog *common.BinlogEvent) BinlogEvent {
 	return BinlogEvent{
 		Db:     binlog.Db,
 		Table:  binlog.Table,

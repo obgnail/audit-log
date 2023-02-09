@@ -23,11 +23,12 @@ type TxInfo struct {
 	Status  uint8     `json:"-" ch:"-"`
 }
 
-func ConvertTx(txInfo *common.TxInfo) TxInfo {
+func ConvertCHFormatTxInfo(txInfo *common.TxInfo, status uint8) TxInfo {
 	return TxInfo{
 		Time:    time.Unix(txInfo.Time, 0),
 		Context: txInfo.Context,
 		GTID:    txInfo.GTID,
+		Status:  status,
 	}
 }
 
