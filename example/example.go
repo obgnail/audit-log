@@ -60,13 +60,21 @@ func dropTable() {
 }
 
 func insertUser() {
-	fmt.Println("----------------------------------------------")
-	myType := 1
-	myContext := context.New(myType, "typeParam1", "typeParam2")
+	// 每个具体业务对应一个Context。以【插入用户】为例
+	// Context 中包含业务代码兴趣的环境信息
+	insertUserContext := 1
+	myContext := context.New(insertUserContext, "ContextParam1", "ContextParam2")
+
+	// 执行MySQL事务,携带上面的Context
 	err := mysql.DBMTransact(myContext.String(), func(tx *gorp.Transaction) error {
 		_uuid := uuid.UUID()
 		user := &User{_uuid, _uuid + "Name", _uuid + "@gmail.com", 0}
-		return errors.Trace(AddUser(tx, user))
+		sql := "INSERT INTO `user` (uuid, name, email, status) VALUES (?, ?, ?, ?);"
+		args, _ := mysql.BuildSqlArgs(user.UUID, user.Name, user.Email, user.Status)
+		if _, err := tx.Exec(sql, args...); err != nil {
+			return errors.Trace(err)
+		}
+		return nil
 	})
 	checkErr(err)
 }
